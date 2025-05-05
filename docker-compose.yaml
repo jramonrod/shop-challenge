@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:17
+    env_file: .env
+    volumes:
+      - ./shop-backend/db_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    healthcheck:
+      test: [
+        "CMD-SHELL", 
+        "pg_isready -U postgres -d shop && psql -U postgres -d shop -c 'SELECT 1' || exit 1"
+      ]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+      start_period: 30s
+
+  migrate:
+    image: migrate/migrate:v4.18.3
+    env_file: .env
+    volumes:
+      - ./shop-backend/migrations:/migrations
+    command:
+      - "-path"
+      - "/migrations"
+      - "-database"
+      - "${DATABASE_URL}"
+      - "-verbose"
+      - "up"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  shop-backend:
+    build: ./shop-backend
+    env_file: .env
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      migrate:
+        condition: service_completed_successfully
+

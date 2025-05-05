@@ -1,0 +1,274 @@
+openapi: 3.0.3
+info:
+  title: Factorial Bicycle Shop API
+  version: 1.0.0
+  description: |
+    Backend API for the Factorial Coding Challenge
+servers:
+  - url: http://localhost:8080
+paths:
+  /products:
+    get:
+      summary: List all products
+      responses:
+        "200":
+          description: A list of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+  /products/{product_slug}:
+    get:
+      summary: Get a product by slug
+      parameters:
+        - name: product_slug
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: The requested product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        "400":
+          description: Missing or invalid slug
+  /products/{product_id}/categories:
+    get:
+      summary: List categories for a product
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Categories belonging to the product
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+  /products/{product_id}/categories/{category_id}/parts:
+    get:
+      summary: List parts in a category for a product
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Parts available in this category
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Part'
+  /products/{product_id}/restrictions/verify:
+    post:
+      summary: Verify a selection of parts against business rules
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartsSelection'
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViolationsDTO'
+        "400":
+          description: Invalid request payload
+  /cart:
+    post:
+      summary: Create a new cart with selected parts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartsSelection'
+      responses:
+        "200":
+          description: Newly created cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        "400":
+          description: Invalid request payload
+  /carts/{cart_id}:
+    get:
+      summary: Retrieve a cart by ID
+      parameters:
+        - name: cart_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The cart and its items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        "400":
+          description: Missing or invalid cart_id
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        location:
+          type: string
+        is_available:
+          type: boolean
+        slug:
+          type: string
+      required:
+        - uuid
+        - name
+        - is_available
+        - slug
+
+    Category:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        product_id:
+          type: string
+          format: uuid
+      required:
+        - uuid
+        - name
+        - product_id
+
+    Part:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        inventory:
+          type: integer
+        price_cents:
+          type: integer
+        category_id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+      required:
+        - uuid
+        - name
+        - inventory
+        - price_cents
+        - category_id
+        - product_id
+
+    PartsSelection:
+      type: object
+      properties:
+        parts:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - parts
+
+    Violation:
+      type: object
+      properties:
+        principal:
+          type: string
+          format: uuid
+        resource_id:
+          type: string
+          format: uuid
+        effect:
+          type: string
+          enum: [allow, forbid, only]
+        message:
+          type: string
+        allowed:
+          type: array
+          items:
+            $ref: '#/components/schemas/Part'
+      required:
+        - principal
+        - resource_id
+        - effect
+        - message
+        - allowed
+
+    ViolationsDTO:
+      type: object
+      properties:
+        is_valid:
+          type: boolean
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Violation'
+      required:
+        - is_valid
+        - violations
+
+    Cart:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        products:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/Part'
+      required:
+        - uuid
+        - products
