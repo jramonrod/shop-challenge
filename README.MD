@@ -37,6 +37,8 @@ To keep the scope of this challenge focused there are a couple more things left 
 * Testing
 * CI/CD
 * Infra
+* CDN for fetching page assets
+  * Though a hack was implemented to fetch the assets from a predefined location on the local repository
 
 # Referencing Specific Challenge Requirements
 Please find answers to the challenge specification in the ./challenge-requirements folder. The following is the location to the requirements: 
